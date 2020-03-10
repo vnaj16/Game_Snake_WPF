@@ -1,17 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
+
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
+
 using System.Windows.Shapes;
 
 namespace Game_Snake_WPF
@@ -40,6 +34,7 @@ namespace Game_Snake_WPF
         public enum SnakeDirection { Left, Right, Up, Down };
         private SnakeDirection snakeDirection = SnakeDirection.Right;
         private int snakeLength;
+        private int currentScore = 0;
         #endregion
 
         #region Food
@@ -58,7 +53,7 @@ namespace Game_Snake_WPF
         {
             DrawGameArea();
 
-            StartNewGame();
+            StartNewGame(Restart:false);
         }
 
         private void Window_KeyUp(object sender, KeyEventArgs e)
@@ -66,24 +61,28 @@ namespace Game_Snake_WPF
             SnakeDirection originalSnakeDirection = snakeDirection;
             switch (e.Key)
             {
-                case Key.Up:
+                case Key.Up: 
+                case Key.W:
                     if (snakeDirection != SnakeDirection.Down)
                         snakeDirection = SnakeDirection.Up;
                     break;
                 case Key.Down:
+                case Key.S:
                     if (snakeDirection != SnakeDirection.Up)
                         snakeDirection = SnakeDirection.Down;
                     break;
                 case Key.Left:
+                case Key.A:
                     if (snakeDirection != SnakeDirection.Right)
                         snakeDirection = SnakeDirection.Left;
                     break;
                 case Key.Right:
+                case Key.D:
                     if (snakeDirection != SnakeDirection.Left)
                         snakeDirection = SnakeDirection.Right;
                     break;
                 case Key.Space:
-                    StartNewGame(Restart:true);
+                    StartNewGame();
                     break;
             }
 
@@ -102,14 +101,14 @@ namespace Game_Snake_WPF
         #endregion
 
         #region Game Logic
-        private void StartNewGame(bool Restart = false)
+        private void StartNewGame(bool Restart = true)
         {
             if (Restart)
             {
                 EraseSnake();
                 EraseSnakeFood();
             }
-
+            currentScore = 0;
             snakeLength = SnakeStartLength;
             snakeDirection = SnakeDirection.Right;
             snakeParts.Add(new SnakePart() { Position = new Point(SnakeSquareSize * InitialColumn, SnakeSquareSize * InitialRow) });
@@ -118,6 +117,9 @@ namespace Game_Snake_WPF
             // Draw the snake and the snake food
             DrawSnake();
             DrawSnakeFood();
+
+            // Update status
+            UpdateGameStatus();
 
             // Go!        
             gameTickTimer.IsEnabled = true;
@@ -156,6 +158,54 @@ namespace Game_Snake_WPF
                     doneDrawingBackground = true;
             }
         }
+
+        private void DoCollisionCheck()
+        {
+            SnakePart snakeHead = snakeParts[snakeParts.Count - 1];
+
+            //Verifico si como la fruta
+            if ((snakeHead.Position.X == Canvas.GetLeft(snakeFood)) && (snakeHead.Position.Y == Canvas.GetTop(snakeFood)))
+            {
+                EatSnakeFood();
+                return;
+            }
+
+            //Verifico si choco con una pared
+            if ((snakeHead.Position.Y < 0) || (snakeHead.Position.Y >= GameArea.ActualHeight) ||
+            (snakeHead.Position.X < 0) || (snakeHead.Position.X >= GameArea.ActualWidth))
+            {
+                EndGame();
+            }
+
+            //Verifico si me choco con alguna parte del cuerpo
+            foreach (SnakePart snakeBodyPart in snakeParts.Take(snakeParts.Count - 1))
+            {
+                if ((snakeHead.Position.X == snakeBodyPart.Position.X) && (snakeHead.Position.Y == snakeBodyPart.Position.Y))
+                    EndGame();
+            }
+        }
+
+        private void EatSnakeFood()
+        {
+            snakeLength++;
+            currentScore++;
+            int timerInterval = Math.Max(SnakeSpeedThreshold, (int)gameTickTimer.Interval.TotalMilliseconds - (currentScore * 2));
+            gameTickTimer.Interval = TimeSpan.FromMilliseconds(timerInterval);
+            GameArea.Children.Remove(snakeFood);
+            DrawSnakeFood();
+            UpdateGameStatus();
+        }
+
+        private void UpdateGameStatus()
+        {
+            this.Title = "SnakeWPF - Score: " + currentScore + " - Game speed: " + gameTickTimer.Interval.TotalMilliseconds;
+        }
+
+        private void EndGame()
+        {
+            gameTickTimer.IsEnabled = false;
+            MessageBox.Show("Oooops, you died!\n\nTo start a new game, just press the Space bar...", "SnakeWPF");
+        }
         #endregion
 
         #region Snake Functions
@@ -187,7 +237,7 @@ namespace Game_Snake_WPF
                 }
             }
 
-            snakeParts = new SnakePartCollection();
+            snakeParts.Clear();
         }
         private void MoveSnake()//Hace un desplazamiento, ELIMINA LA COLA, VUELVE A TODOS Body Y AÑADE UN NUEVO CUADRITO(CABEZA) EN LA DIRECCION INDICADA
         {
@@ -234,8 +284,8 @@ namespace Game_Snake_WPF
             });
             //... and then have it drawn!  
             DrawSnake();
-            // We'll get to this later...  
-            //DoCollisionCheck();          
+            // Finally: Check if it just hit something! 
+            DoCollisionCheck();          
         }
 
         #endregion
@@ -281,5 +331,7 @@ namespace Game_Snake_WPF
 
 
         #endregion
+
+        //https://wpf-tutorial.com/creating-game-snakewpf/collision-detection/
     }
 }
