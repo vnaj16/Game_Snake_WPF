@@ -83,7 +83,7 @@ namespace Game_Snake_WPF
                         snakeDirection = SnakeDirection.Right;
                     break;
                 case Key.Space:
-                    StartNewGame();
+                    StartNewGame(Restart:true);
                     break;
             }
 
@@ -102,8 +102,14 @@ namespace Game_Snake_WPF
         #endregion
 
         #region Game Logic
-        private void StartNewGame()
+        private void StartNewGame(bool Restart = false)
         {
+            if (Restart)
+            {
+                EraseSnake();
+                EraseSnakeFood();
+            }
+
             snakeLength = SnakeStartLength;
             snakeDirection = SnakeDirection.Right;
             snakeParts.Add(new SnakePart() { Position = new Point(SnakeSquareSize * InitialColumn, SnakeSquareSize * InitialRow) });
@@ -171,7 +177,18 @@ namespace Game_Snake_WPF
                 }
             }
         }
+        private void EraseSnake()
+        {
+            foreach (SnakePart snakePart in snakeParts)
+            {
+                if (snakePart.UiElement != null)
+                {
+                    GameArea.Children.Remove(snakePart.UiElement);
+                }
+            }
 
+            snakeParts = new SnakePartCollection();
+        }
         private void MoveSnake()//Hace un desplazamiento, ELIMINA LA COLA, VUELVE A TODOS Body Y AÑADE UN NUEVO CUADRITO(CABEZA) EN LA DIRECCION INDICADA
         {
             // Remove the last part of the snake, in preparation of the new part added below  
@@ -253,6 +270,16 @@ namespace Game_Snake_WPF
             Canvas.SetTop(snakeFood, foodPosition.Y);
             Canvas.SetLeft(snakeFood, foodPosition.X);
         }
+
+        private void EraseSnakeFood()
+        {
+            if (snakeFood != null)
+            {
+                GameArea.Children.Remove(snakeFood);
+            }
+        }
+
+
         #endregion
     }
 }
