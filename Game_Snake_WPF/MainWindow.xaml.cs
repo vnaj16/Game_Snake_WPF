@@ -23,12 +23,15 @@ namespace Game_Snake_WPF
     {
         private System.Windows.Threading.DispatcherTimer gameTickTimer = new System.Windows.Threading.DispatcherTimer();
 
+
+        int InitialRow = 5, InitialColumn = 0;
+        private Random rnd = new Random();
+
+        #region Snake
         const int SnakeSquareSize = 20;
         const int SnakeStartLength = 3;
         const int SnakeStartSpeed = 400;
         const int SnakeSpeedThreshold = 100;
-
-        int InitialRow = 5, InitialColumn = 0;
 
         private SolidColorBrush snakeBodyBrush = Brushes.Green;
         private SolidColorBrush snakeHeadBrush = Brushes.YellowGreen;
@@ -37,6 +40,12 @@ namespace Game_Snake_WPF
         public enum SnakeDirection { Left, Right, Up, Down };
         private SnakeDirection snakeDirection = SnakeDirection.Right;
         private int snakeLength;
+        #endregion
+
+        #region Food
+        private UIElement snakeFood = null;
+        private SolidColorBrush foodBrush = Brushes.Red;
+        #endregion
 
         public MainWindow()
         {
@@ -60,13 +69,14 @@ namespace Game_Snake_WPF
         {
             snakeLength = SnakeStartLength;
             snakeDirection = SnakeDirection.Right;
-            snakeParts.Add(new SnakePart() { Position = new Point(SnakeSquareSize * InitialColumn, SnakeSquareSize * InitialRow) });
+            snakeParts.Add(new SnakePart() { Position = new Point(SnakeSquareSize * 5, SnakeSquareSize * 5) });
             gameTickTimer.Interval = TimeSpan.FromMilliseconds(SnakeStartSpeed);
 
-            // Draw the snake  
+            // Draw the snake and the snake food
             DrawSnake();
+            DrawSnakeFood();
 
-            // Go!          
+            // Go!        
             gameTickTimer.IsEnabled = true;
         }
 
@@ -106,6 +116,7 @@ namespace Game_Snake_WPF
             }
         }
 
+        #region Snake Functions
         private void DrawSnake()
         {
             foreach (SnakePart snakePart in snakeParts)
@@ -174,5 +185,38 @@ namespace Game_Snake_WPF
             //DoCollisionCheck();          
         }
 
+        #endregion
+
+        #region Food Functions
+        private Point GetNextFoodPosition()
+        {
+            int maxX = (int)(GameArea.ActualWidth / SnakeSquareSize);
+            int maxY = (int)(GameArea.ActualHeight / SnakeSquareSize);
+            int foodX = rnd.Next(0, maxX) * SnakeSquareSize;
+            int foodY = rnd.Next(0, maxY) * SnakeSquareSize;
+
+            foreach (SnakePart snakePart in snakeParts)
+            {
+                if ((snakePart.Position.X == foodX) && (snakePart.Position.Y == foodY))
+                    return GetNextFoodPosition();
+            }
+
+            return new Point(foodX, foodY);
+        }
+
+        private void DrawSnakeFood()
+        {
+            Point foodPosition = GetNextFoodPosition();
+            snakeFood = new Ellipse()
+            {
+                Width = SnakeSquareSize,
+                Height = SnakeSquareSize,
+                Fill = foodBrush
+            };
+            GameArea.Children.Add(snakeFood);
+            Canvas.SetTop(snakeFood, foodPosition.Y);
+            Canvas.SetLeft(snakeFood, foodPosition.X);
+        }
+        #endregion
     }
 }
