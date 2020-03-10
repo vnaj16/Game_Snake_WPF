@@ -53,6 +53,7 @@ namespace Game_Snake_WPF
             gameTickTimer.Tick += GameTickTimer_Tick;
         }
 
+        #region Window Events
         private void Window_ContentRendered(object sender, EventArgs e)
         {
             DrawGameArea();
@@ -60,16 +61,52 @@ namespace Game_Snake_WPF
             StartNewGame();
         }
 
+        private void Window_KeyUp(object sender, KeyEventArgs e)
+        {
+            SnakeDirection originalSnakeDirection = snakeDirection;
+            switch (e.Key)
+            {
+                case Key.Up:
+                    if (snakeDirection != SnakeDirection.Down)
+                        snakeDirection = SnakeDirection.Up;
+                    break;
+                case Key.Down:
+                    if (snakeDirection != SnakeDirection.Up)
+                        snakeDirection = SnakeDirection.Down;
+                    break;
+                case Key.Left:
+                    if (snakeDirection != SnakeDirection.Right)
+                        snakeDirection = SnakeDirection.Left;
+                    break;
+                case Key.Right:
+                    if (snakeDirection != SnakeDirection.Left)
+                        snakeDirection = SnakeDirection.Right;
+                    break;
+                case Key.Space:
+                    StartNewGame();
+                    break;
+            }
+
+            /*verificamos si la dirección ha cambiado en comparación con la dirección original; 
+             * si lo ha hecho, llamamos al método MoveSnake (), 
+             * para que el cambio se refleje de inmediato.
+             */
+            if (snakeDirection != originalSnakeDirection)
+                MoveSnake();
+        }
+
         private void GameTickTimer_Tick(object sender, EventArgs e)
         {
             MoveSnake();
         }
+        #endregion
 
+        #region Game Logic
         private void StartNewGame()
         {
             snakeLength = SnakeStartLength;
             snakeDirection = SnakeDirection.Right;
-            snakeParts.Add(new SnakePart() { Position = new Point(SnakeSquareSize * 5, SnakeSquareSize * 5) });
+            snakeParts.Add(new SnakePart() { Position = new Point(SnakeSquareSize * InitialColumn, SnakeSquareSize * InitialRow) });
             gameTickTimer.Interval = TimeSpan.FromMilliseconds(SnakeStartSpeed);
 
             // Draw the snake and the snake food
@@ -79,8 +116,6 @@ namespace Game_Snake_WPF
             // Go!        
             gameTickTimer.IsEnabled = true;
         }
-
-
 
         private void DrawGameArea()
         {
@@ -115,6 +150,7 @@ namespace Game_Snake_WPF
                     doneDrawingBackground = true;
             }
         }
+        #endregion
 
         #region Snake Functions
         private void DrawSnake()
